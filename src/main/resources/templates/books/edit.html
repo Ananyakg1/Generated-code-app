@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Book - Book Review App</title>
+    
+    <!-- Bootstrap CSS -->
+    <link th:href="@{/webjars/bootstrap/css/bootstrap.min.css}" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border: 1px solid rgba(0, 0, 0, 0.125);
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding: 20px 0;
+            background-color: #343a40;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" th:href="@{/}">📚 Book Review App</a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/books}">Books</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/reviews}">Reviews</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/about}">About</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mt-4">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+                        <li class="breadcrumb-item"><a th:href="@{/books}">Books</a></li>
+                        <li class="breadcrumb-item">
+                            <a th:href="@{/books/{id}(id=${book.id})}" th:text="${book.title}">Book Title</a>
+                        </li>
+                        <li class="breadcrumb-item active">Edit</li>
+                    </ol>
+                </nav>
+                <h1>✏️ Edit Book</h1>
+                <p class="text-muted">Update the book information below.</p>
+            </div>
+        </div>
+        
+        <!-- Form -->
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Book Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <form th:action="@{/books/{id}/edit(id=${book.id})}" th:object="${book}" method="post">
+                            <!-- Title -->
+                            <div class="mb-3">
+                                <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
+                                <input type="text" 
+                                       th:field="*{title}"
+                                       class="form-control"
+                                       th:classappend="${#fields.hasErrors('title')} ? 'is-invalid' : ''"
+                                       id="title" 
+                                       placeholder="Enter book title">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
+                            </div>
+                            
+                            <!-- Author -->
+                            <div class="mb-3">
+                                <label for="author" class="form-label">Author <span class="text-danger">*</span></label>
+                                <input type="text" 
+                                       th:field="*{author}"
+                                       class="form-control"
+                                       th:classappend="${#fields.hasErrors('author')} ? 'is-invalid' : ''"
+                                       id="author" 
+                                       placeholder="Enter author name">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('author')}" th:errors="*{author}"></div>
+                            </div>
+                            
+                            <!-- Genre and Publication Year Row -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="genre" class="form-label">Genre</label>
+                                        <input type="text" 
+                                               th:field="*{genre}"
+                                               class="form-control"
+                                               th:classappend="${#fields.hasErrors('genre')} ? 'is-invalid' : ''"
+                                               id="genre" 
+                                               placeholder="e.g., Fiction, Mystery, Romance">
+                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('genre')}" th:errors="*{genre}"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="publicationYear" class="form-label">Publication Year</label>
+                                        <input type="number" 
+                                               th:field="*{publicationYear}"
+                                               class="form-control"
+                                               th:classappend="${#fields.hasErrors('publicationYear')} ? 'is-invalid' : ''"
+                                               id="publicationYear" 
+                                               min="1000" 
+                                               max="2100"
+                                               placeholder="e.g., 2023">
+                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('publicationYear')}" th:errors="*{publicationYear}"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- ISBN -->
+                            <div class="mb-3">
+                                <label for="isbn" class="form-label">ISBN</label>
+                                <input type="text" 
+                                       th:field="*{isbn}"
+                                       class="form-control"
+                                       th:classappend="${#fields.hasErrors('isbn')} ? 'is-invalid' : ''"
+                                       id="isbn" 
+                                       placeholder="e.g., 978-0-123456-78-9">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('isbn')}" th:errors="*{isbn}"></div>
+                                <div class="form-text">International Standard Book Number (optional)</div>
+                            </div>
+                            
+                            <!-- Description -->
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea th:field="*{description}"
+                                          class="form-control"
+                                          th:classappend="${#fields.hasErrors('description')} ? 'is-invalid' : ''"
+                                          id="description" 
+                                          rows="4"
+                                          placeholder="Brief description of the book..."></textarea>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></div>
+                            </div>
+                            
+                            <!-- Buttons -->
+                            <div class="d-flex justify-content-between">
+                                <a th:href="@{/books/{id}(id=${book.id})}" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left"></i> Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i> Update Book
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Review Summary Card -->
+                <div class="card mt-4" th:if="${book.reviewCount > 0}">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">📊 Review Summary</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-6">
+                                <h5 th:text="${book.reviewCount}">0</h5>
+                                <small class="text-muted">Total Reviews</small>
+                            </div>
+                            <div class="col-md-6">
+                                <h5 th:text="${#numbers.formatDecimal(book.averageRating, 1, 1)}">0.0</h5>
+                                <small class="text-muted">Average Rating</small>
+                            </div>
+                        </div>
+                        <div class="alert alert-warning mt-3">
+                            <strong>Note:</strong> Editing this book will not affect existing reviews.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="footer mt-auto">
+        <div class="container text-center">
+            <p class="mb-0">&copy; 2024 Book Review App. Built with Spring Boot and Bootstrap.</p>
+        </div>
+    </footer>
+    
+    <!-- Bootstrap JS and dependencies -->
+    <script th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}"></script>
+    <script th:src="@{/webjars/jquery/jquery.min.js}"></script>
+</body>
+</html>

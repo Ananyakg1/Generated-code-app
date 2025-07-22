@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - Book Review App</title>
+    
+    <!-- Bootstrap CSS -->
+    <link th:href="@{/webjars/bootstrap/css/bootstrap.min.css}" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border: 1px solid rgba(0, 0, 0, 0.125);
+        }
+        
+        .feature-card {
+            transition: transform 0.2s;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding: 20px 0;
+            background-color: #343a40;
+            color: white;
+        }
+        
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 0;
+            margin-bottom: 40px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" th:href="@{/}">📚 Book Review App</a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/books}">Books</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/reviews}">Reviews</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" th:href="@{/about}">About</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container text-center">
+            <h1 class="display-4 fw-bold mb-3">About Book Review App</h1>
+            <p class="lead">A comprehensive platform for book lovers to discover, review, and share their reading experiences</p>
+        </div>
+    </section>
+    
+    <div class="container">
+        <!-- About Section -->
+        <div class="row mb-5">
+            <div class="col-lg-8 mx-auto">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">📖 Our Mission</h3>
+                    </div>
+                    <div class="card-body">
+                        <p class="lead">
+                            Book Review App is designed to create a vibrant community of book lovers who want to share their reading experiences, 
+                            discover new books, and connect with fellow readers.
+                        </p>
+                        <p>
+                            Whether you're a casual reader looking for your next great book or an avid bibliophile wanting to share your insights, 
+                            our platform provides an intuitive and engaging way to manage your reading journey.
+                        </p>
+                        <p>
+                            Built with modern web technologies, our application ensures a smooth and responsive experience across all devices, 
+                            making it easy to browse books and write reviews anytime, anywhere.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Features Section -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <h2 class="text-center mb-4">✨ Features</h2>
+            </div>
+            <div class="col-md-6 col-lg-3 mb-4">
+                <div class="card feature-card h-100 text-center">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <span style="font-size: 3rem;">📚</span>
+                        </div>
+                        <h5 class="card-title">Book Management</h5>
+                        <p class="card-text">Add, edit, and organize books with detailed information including title, author, genre, and publication year.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3 mb-4">
+                <div class="card feature-card h-100 text-center">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <span style="font-size: 3rem;">⭐</span>
+                        </div>
+                        <h5 class="card-title">Review System</h5>
+                        <p class="card-text">Write detailed reviews with star ratings to help others discover great books and avoid disappointments.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3 mb-4">
+                <div class="card feature-card h-100 text-center">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <span style="font-size: 3rem;">🔍</span>
+                        </div>
+                        <h5 class="card-title">Search & Discovery</h5>
+                        <p class="card-text">Easily find books by title, author, or genre with our powerful search functionality.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3 mb-4">
+                <div class="card feature-card h-100 text-center">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <span style="font-size: 3rem;">📱</span>
+                        </div>
+                        <h5 class="card-title">Responsive Design</h5>
+                        <p class="card-text">Access your book library and reviews from any device with our mobile-friendly interface.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Technology Stack -->
+        <div class="row mb-5">
+            <div class="col-lg-8 mx-auto">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">🛠️ Technology Stack</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>Backend</h5>
+                                <ul>
+                                    <li><strong>Java 17</strong> - Modern programming language</li>
+                                    <li><strong>Spring Boot 3</strong> - Application framework</li>
+                                    <li><strong>Spring Data JPA</strong> - Data persistence</li>
+                                    <li><strong>H2 Database</strong> - In-memory database for development</li>
+                                    <li><strong>Maven</strong> - Dependency management</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>Frontend</h5>
+                                <ul>
+                                    <li><strong>Thymeleaf</strong> - Server-side templating</li>
+                                    <li><strong>Bootstrap 5</strong> - UI framework</li>
+                                    <li><strong>HTML5 & CSS3</strong> - Modern web standards</li>
+                                    <li><strong>JavaScript</strong> - Interactive features</li>
+                                    <li><strong>WebJars</strong> - Client-side dependency management</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Getting Started -->
+        <div class="row mb-5">
+            <div class="col-lg-8 mx-auto">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">🚀 Getting Started</h3>
+                    </div>
+                    <div class="card-body">
+                        <ol>
+                            <li><strong>Add Books:</strong> Start by adding your favorite books to the library with detailed information.</li>
+                            <li><strong>Write Reviews:</strong> Share your thoughts and rate books to help other readers make informed decisions.</li>
+                            <li><strong>Discover:</strong> Browse through the collection and discover new books based on reviews and ratings.</li>
+                            <li><strong>Engage:</strong> Build a comprehensive library of reviewed books and track your reading journey.</li>
+                        </ol>
+                        <div class="mt-4">
+                            <a th:href="@{/books/new}" class="btn btn-primary me-2">Add Your First Book</a>
+                            <a th:href="@{/books}" class="btn btn-outline-primary">Browse Books</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Contact Information -->
+        <div class="row mb-5">
+            <div class="col-lg-8 mx-auto">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">📞 Support & Feedback</h3>
+                    </div>
+                    <div class="card-body text-center">
+                        <p>We'd love to hear from you! If you have any questions, suggestions, or feedback, please don't hesitate to reach out.</p>
+                        <p class="mb-4">
+                            <strong>Version:</strong> 1.0.0<br>
+                            <strong>Last Updated:</strong> January 2024
+                        </p>
+                        <div>
+                            <a href="mailto:support@bookreviewapp.com" class="btn btn-outline-primary me-2">📧 Contact Support</a>
+                            <a href="https://github.com/bookreviewapp" class="btn btn-outline-secondary" target="_blank">💻 View on GitHub</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="footer mt-auto">
+        <div class="container text-center">
+            <p class="mb-0">&copy; 2024 Book Review App. Built with Spring Boot and Bootstrap.</p>
+        </div>
+    </footer>
+    
+    <!-- Bootstrap JS and dependencies -->
+    <script th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}"></script>
+    <script th:src="@{/webjars/jquery/jquery.min.js}"></script>
+</body>
+</html>

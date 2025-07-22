@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Books - Book Review App</title>
+    
+    <!-- Bootstrap CSS -->
+    <link th:href="@{/webjars/bootstrap/css/bootstrap.min.css}" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border: 1px solid rgba(0, 0, 0, 0.125);
+            transition: transform 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .star-rating {
+            color: #ffc107;
+        }
+        
+        .book-cover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding: 20px 0;
+            background-color: #343a40;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" th:href="@{/}">📚 Book Review App</a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" th:href="@{/books}">Books</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/reviews}">Reviews</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/about}">About</a>
+                    </li>
+                </ul>
+                
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-outline-light btn-sm" th:href="@{/books/new}">Add Book</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mt-4">
+        <!-- Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h1>📚 Books Library</h1>
+                <p class="text-muted" th:text="${genre != null ? 'Genre: ' + genre : 'All books in our collection'}">All books in our collection</p>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex justify-content-end">
+                    <a th:href="@{/books/new}" class="btn btn-primary">Add New Book</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Search Bar -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <form th:action="@{/books}" method="get" class="d-flex">
+                    <input type="text" name="search" th:value="${search}" 
+                           class="form-control me-2" placeholder="Search by title or author...">
+                    <button type="submit" class="btn btn-outline-primary">Search</button>
+                    <a th:href="@{/books}" class="btn btn-outline-secondary ms-2">Clear</a>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Books Grid -->
+        <div th:if="${#lists.isEmpty(books)}" class="text-center py-5">
+            <div class="text-muted">
+                <h3>No books found</h3>
+                <p th:if="${search != null}">No books match your search criteria.</p>
+                <p th:if="${search == null}">No books in the library yet.</p>
+                <a th:href="@{/books/new}" class="btn btn-primary">Add the first book</a>
+            </div>
+        </div>
+        
+        <div th:if="${!#lists.isEmpty(books)}" class="row">
+            <div th:each="book : ${books}" class="col-md-4 col-lg-3 mb-4">
+                <div class="card h-100">
+                    <div class="book-cover">
+                        <div>
+                            <div th:text="${book.title}" class="fw-bold mb-2">Book Title</div>
+                            <div th:text="'by ' + ${book.author}" class="small">Author</div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">
+                            <a th:href="@{/books/{id}(id=${book.id})}" 
+                               th:text="${book.title}" 
+                               class="text-decoration-none">Book Title</a>
+                        </h5>
+                        
+                        <p class="card-text text-muted mb-2">
+                            <strong>Author:</strong> <span th:text="${book.author}">Author Name</span>
+                        </p>
+                        
+                        <p class="card-text text-muted mb-2" th:if="${book.genre}">
+                            <strong>Genre:</strong> <span th:text="${book.genre}">Genre</span>
+                        </p>
+                        
+                        <p class="card-text text-muted mb-2" th:if="${book.publicationYear}">
+                            <strong>Year:</strong> <span th:text="${book.publicationYear}">Year</span>
+                        </p>
+                        
+                        <p class="card-text small text-muted flex-grow-1" 
+                           th:text="${#strings.abbreviate(book.description, 100)}">Book description...</p>
+                        
+                        <div class="mt-auto">
+                            <!-- Rating -->
+                            <div class="mb-2">
+                                <div class="star-rating d-inline">
+                                    <span th:each="star : ${#numbers.sequence(1, 5)}"
+                                          th:text="${star <= book.averageRating} ? '★' : '☆'">★</span>
+                                </div>
+                                <small class="text-muted ms-2" 
+                                       th:text="'(' + ${book.reviewCount} + ' reviews)'">
+                                    (0 reviews)
+                                </small>
+                            </div>
+                            
+                            <!-- Action Buttons -->
+                            <div class="btn-group w-100" role="group">
+                                <a th:href="@{/books/{id}(id=${book.id})}" 
+                                   class="btn btn-outline-primary btn-sm">View</a>
+                                <a th:href="@{/reviews/new(bookId=${book.id})}" 
+                                   class="btn btn-outline-success btn-sm">Review</a>
+                                <a th:href="@{/books/{id}/edit(id=${book.id})}" 
+                                   class="btn btn-outline-warning btn-sm">Edit</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results Info -->
+        <div th:if="${!#lists.isEmpty(books)}" class="row mt-4">
+            <div class="col-12">
+                <p class="text-muted">
+                    Showing <strong th:text="${#lists.size(books)}">0</strong> 
+                    <span th:text="${search != null ? 'results for \'' + search + '\'' : 'books'}">books</span>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="footer mt-auto">
+        <div class="container text-center">
+            <p class="mb-0">&copy; 2024 Book Review App. Built with Spring Boot and Bootstrap.</p>
+        </div>
+    </footer>
+    
+    <!-- Bootstrap JS and dependencies -->
+    <script th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}"></script>
+    <script th:src="@{/webjars/jquery/jquery.min.js}"></script>
+</body>
+</html>

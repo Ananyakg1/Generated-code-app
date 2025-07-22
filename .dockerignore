@@ -1,0 +1,79 @@
+# Maven build artifacts
+target/
+!target/*.jar
+*.war
+*.ear
+*.nar
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+.svn/
+
+# Documentation (optional - uncomment if you don't want docs in container)
+# *.md
+# docs/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.swp
+*.swo
+*~
+
+# Node modules (if any frontend build tools are used)
+node_modules/
+npm-debug.log*
+
+# Maven wrapper (we'll use system maven in container)
+.mvn/wrapper/maven-wrapper.jar
+mvnw
+mvnw.cmd
+
+# Application specific
+*.pid
+*.seed
+*.lock
+
+# Test files and reports
+test-results/
+coverage/
+*.coverage
+
+# Docker files (prevent recursive copying)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Scripts (security - don't include local scripts)
+run-app.bat
+*.sh
+*.ps1
+
+# Environment and configuration files (security)
+.env*
+application-local.properties
+application-dev.properties
+
+# Backup and temporary files
+*.bak
+*.backup
+*.old
+*.orig

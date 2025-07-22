@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${book.title} + ' - Book Review App'">Book Details - Book Review App</title>
+    
+    <!-- Bootstrap CSS -->
+    <link th:href="@{/webjars/bootstrap/css/bootstrap.min.css}" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border: 1px solid rgba(0, 0, 0, 0.125);
+        }
+        
+        .star-rating {
+            color: #ffc107;
+            font-size: 1.2rem;
+        }
+        
+        .book-cover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 300px;
+            font-size: 18px;
+            text-align: center;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding: 20px 0;
+            background-color: #343a40;
+            color: white;
+        }
+        
+        .review-card {
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" th:href="@{/}">📚 Book Review App</a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/books}">Books</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/reviews}">Reviews</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/about}">About</a>
+                    </li>
+                </ul>
+                
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-outline-light btn-sm" th:href="@{/books/new}">Add Book</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mt-4">
+        <!-- Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/books}">Books</a></li>
+                <li class="breadcrumb-item active" th:text="${book.title}">Book Title</li>
+            </ol>
+        </nav>
+        
+        <!-- Book Details -->
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <!-- Book Cover -->
+                <div class="card">
+                    <div class="book-cover">
+                        <div>
+                            <div th:text="${book.title}" class="fw-bold mb-2">Book Title</div>
+                            <div th:text="'by ' + ${book.author}" class="small">Author</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a th:href="@{/reviews/new(bookId=${book.id})}" 
+                               class="btn btn-primary">
+                                ⭐ Write a Review
+                            </a>
+                            <a th:href="@{/books/{id}/edit(id=${book.id})}" 
+                               class="btn btn-outline-warning">
+                                ✏️ Edit Book
+                            </a>
+                            <form th:action="@{/books/{id}/delete(id=${book.id})}" method="post" 
+                                  onsubmit="return confirm('Are you sure you want to delete this book? This will also delete all reviews.')">
+                                <button type="submit" class="btn btn-outline-danger w-100">
+                                    🗑️ Delete Book
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-8">
+                <!-- Book Information -->
+                <div class="card">
+                    <div class="card-header">
+                        <h1 class="card-title mb-1" th:text="${book.title}">Book Title</h1>
+                        <p class="text-muted mb-0" th:text="'by ' + ${book.author}">Author</p>
+                    </div>
+                    <div class="card-body">
+                        <!-- Rating Summary -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <div class="star-rating me-2">
+                                        <span th:each="star : ${#numbers.sequence(1, 5)}"
+                                              th:text="${star <= book.averageRating} ? '★' : '☆'">★</span>
+                                    </div>
+                                    <span class="me-2" th:text="${#numbers.formatDecimal(book.averageRating, 1, 1)}">0.0</span>
+                                    <span class="text-muted" th:text="'(' + ${book.reviewCount} + ' reviews)'">
+                                        (0 reviews)
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Book Details -->
+                        <div class="row">
+                            <div class="col-md-6" th:if="${book.genre}">
+                                <p><strong>Genre:</strong> 
+                                    <span class="badge bg-secondary" th:text="${book.genre}">Genre</span>
+                                </p>
+                            </div>
+                            <div class="col-md-6" th:if="${book.publicationYear}">
+                                <p><strong>Publication Year:</strong> <span th:text="${book.publicationYear}">Year</span></p>
+                            </div>
+                            <div class="col-md-6" th:if="${book.isbn}">
+                                <p><strong>ISBN:</strong> <span th:text="${book.isbn}">ISBN</span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Added:</strong> 
+                                    <span th:text="${#temporals.format(book.createdAt, 'MMM dd, yyyy')}">Date</span>
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div th:if="${book.description and !#strings.isEmpty(book.description)}">
+                            <h5>Description</h5>
+                            <p th:text="${book.description}" class="text-muted">Book description...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Reviews Section -->
+                <div class="card mt-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            📝 Reviews (<span th:text="${#lists.size(book.reviews)}">0</span>)
+                        </h5>
+                        <a th:href="@{/reviews/new(bookId=${book.id})}" 
+                           class="btn btn-primary btn-sm">Write Review</a>
+                    </div>
+                    <div class="card-body">
+                        <!-- No Reviews Message -->
+                        <div th:if="${#lists.isEmpty(book.reviews)}" class="text-center py-4 text-muted">
+                            <h6>No reviews yet</h6>
+                            <p>Be the first to review this book!</p>
+                            <a th:href="@{/reviews/new(bookId=${book.id})}" 
+                               class="btn btn-primary">Write the First Review</a>
+                        </div>
+                        
+                        <!-- Reviews List -->
+                        <div th:if="${!#lists.isEmpty(book.reviews)}">
+                            <div th:each="review, iterStat : ${book.reviews}" 
+                                 class="review-card card mb-3" 
+                                 th:if="${iterStat.index < 10}">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <h6 class="mb-1" th:text="${review.reviewerName}">Reviewer Name</h6>
+                                            <div class="star-rating">
+                                                <span th:each="star : ${#numbers.sequence(1, 5)}"
+                                                      th:text="${star <= review.rating} ? '★' : '☆'">★</span>
+                                            </div>
+                                        </div>
+                                        <div class="text-end">
+                                            <small class="text-muted" 
+                                                   th:text="${#temporals.format(review.createdAt, 'MMM dd, yyyy')}">
+                                                Date
+                                            </small>
+                                            <div class="mt-1">
+                                                <a th:href="@{/reviews/{id}/edit(id=${review.id})}" 
+                                                   class="btn btn-outline-warning btn-sm">Edit</a>
+                                                <form th:action="@{/reviews/{id}/delete(id=${review.id})}" 
+                                                      method="post" class="d-inline"
+                                                      onsubmit="return confirm('Are you sure you want to delete this review?')">
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p class="card-text" th:text="${review.comment}">Review comment...</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Show More Reviews Link -->
+                            <div th:if="${#lists.size(book.reviews) > 10}" class="text-center">
+                                <a th:href="@{/reviews/book/{bookId}(bookId=${book.id})}" 
+                                   class="btn btn-outline-primary">
+                                    View All Reviews
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="footer mt-auto">
+        <div class="container text-center">
+            <p class="mb-0">&copy; 2024 Book Review App. Built with Spring Boot and Bootstrap.</p>
+        </div>
+    </footer>
+    
+    <!-- Bootstrap JS and dependencies -->
+    <script th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}"></script>
+    <script th:src="@{/webjars/jquery/jquery.min.js}"></script>
+</body>
+</html>

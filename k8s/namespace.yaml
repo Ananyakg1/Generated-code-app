@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: book-rev-namespace
+  labels:
+    name: book-rev-namespace
+    app.kubernetes.io/name: book-review-app
+    app.kubernetes.io/instance: production
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: namespace
+    app.kubernetes.io/part-of: book-review-system
+    app.kubernetes.io/managed-by: kubernetes
+  annotations:
+    description: "Namespace for Book Review Application production environment"
+    contact: "devops@company.com"
+spec:
+  finalizers:
+    - kubernetes
+---
+# Resource Quota to limit resource consumption
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: book-rev-resource-quota
+  namespace: book-rev-namespace
+  labels:
+    app.kubernetes.io/name: book-review-app
+    app.kubernetes.io/component: resource-quota
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: 4Gi
+    limits.cpu: "4"
+    limits.memory: 8Gi
+    persistentvolumeclaims: "2"
+    pods: "10"
+    services: "5"
+    secrets: "10"
+    configmaps: "10"
+---
+# Limit Range to set default resource limits
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: book-rev-limit-range
+  namespace: book-rev-namespace
+  labels:
+    app.kubernetes.io/name: book-review-app
+    app.kubernetes.io/component: limit-range
+spec:
+  limits:
+  - default:
+      cpu: "500m"
+      memory: "512Mi"
+    defaultRequest:
+      cpu: "250m"
+      memory: "256Mi"
+    type: Container
+  - default:
+      storage: "1Gi"
+    type: PersistentVolumeClaim

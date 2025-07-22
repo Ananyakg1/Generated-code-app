@@ -1,0 +1,617 @@
+name: Build, Scan, and Deploy Java App to AKS
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      skip_security_scan:
+        description: 'Skip security scan for testing'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  JAVA_VERSION: '17'
+  NODE_VERSION: '18'
+  IMAGE_NAME: book-review-app
+  NAMESPACE: flask-app-namespace
+  DEPLOYMENT_NAME: book-review-app
+
+jobs:
+  build:
+    name: Build and Security Scan
+    runs-on: ubuntu-latest
+    
+    outputs:
+      image-tag: ${{ steps.build-info.outputs.image-tag }}
+      image-full: ${{ steps.build-info.outputs.image-full }}
+      build-id: ${{ steps.build-info.outputs.build-id }}
+      
+    permissions:
+      contents: read
+      security-events: write
+      packages: write
+      actions: read
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Generate Build Information
+      id: build-info
+      run: |
+        # Generate build ID using timestamp and short SHA
+        BUILD_ID="${GITHUB_RUN_NUMBER}-$(date +%Y%m%d%H%M%S)-${GITHUB_SHA::8}"
+        IMAGE_TAG="${BUILD_ID}"
+        IMAGE_FULL="${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}"
+        
+        echo "build-id=${BUILD_ID}" >> $GITHUB_OUTPUT
+        echo "image-tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+        echo "image-full=${IMAGE_FULL}" >> $GITHUB_OUTPUT
+        
+        echo "Build ID: ${BUILD_ID}"
+        echo "Image Tag: ${IMAGE_TAG}"
+        echo "Full Image: ${IMAGE_FULL}"
+
+    - name: Set up JDK ${{ env.JAVA_VERSION }}
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Cache Maven dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+
+    - name: Install Azure CLI
+      run: |
+        echo "Installing Azure CLI..."
+        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+        
+        # Verify installation
+        az version
+        echo "Azure CLI installed successfully"
+
+    - name: Install additional dependencies
+      run: |
+        echo "Installing additional tools..."
+        
+        # Install Docker Buildx
+        docker buildx version || {
+          echo "Installing Docker Buildx..."
+          mkdir -p ~/.docker/cli-plugins/
+          curl -sSLo ~/.docker/cli-plugins/docker-buildx https://github.com/docker/buildx/releases/latest/download/buildx-v0.12.1.linux-amd64
+          chmod a+x ~/.docker/cli-plugins/docker-buildx
+        }
+        
+        # Install kubectl
+        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+        sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+        kubectl version --client
+        
+        # Install Helm
+        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+        helm version
+        
+        echo "All dependencies installed successfully"
+
+    - name: Install Trivy Security Scanner
+      run: |
+        echo "Installing Trivy security scanner..."
+        
+        # Add Trivy repository and install
+        sudo apt-get update
+        sudo apt-get install wget apt-transport-https gnupg lsb-release -y
+        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+        echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+        sudo apt-get update
+        sudo apt-get install trivy -y
+        
+        # Verify installation
+        trivy --version
+        echo "Trivy installed successfully"
+
+    - name: Validate Maven project
+      run: |
+        echo "Validating Maven project structure..."
+        
+        # Check if pom.xml exists and is valid
+        if [ ! -f "pom.xml" ]; then
+          echo "Error: pom.xml not found!"
+          exit 1
+        fi
+        
+        # Validate pom.xml syntax
+        mvn validate -q
+        echo "Maven project validation completed successfully"
+
+    - name: Compile and Test Java Application
+      run: |
+        echo "Compiling and testing Java application..."
+        
+        # Clean and compile
+        mvn clean compile -DskipTests=false
+        
+        # Run tests
+        mvn test
+        
+        # Package application
+        mvn package -DskipTests=true
+        
+        # Verify JAR file was created
+        if [ ! -f "target/book-review-app-1.0.0.jar" ]; then
+          echo "Error: JAR file not found after build!"
+          ls -la target/
+          exit 1
+        fi
+        
+        echo "Java application built successfully"
+
+    - name: Login to Azure (using individual secrets)
+      run: |
+        echo "Logging into Azure using individual credentials..."
+        
+        # Login using service principal
+        az login --service-principal \
+          --username "${{ secrets.AZURE_CLIENT_ID }}" \
+          --password "${{ secrets.AZURE_CLIENT_SECRET }}" \
+          --tenant "${{ secrets.AZURE_TENANT_ID }}"
+        
+        # Set subscription
+        az account set --subscription "${{ secrets.AZURE_SUSCRIPTION_ID }}"
+        
+        # Verify login
+        az account show
+        echo "Azure login completed successfully"
+
+    - name: Login to Azure Container Registry
+      run: |
+        echo "Logging into Azure Container Registry..."
+        
+        # Login to ACR using Docker
+        echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login \
+          "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
+          --username "${{ secrets.REGISTRY_USERNAME }}" \
+          --password-stdin
+        
+        # Verify login with Azure CLI
+        az acr login --name "${{ secrets.REGISTRY_LOGIN_SERVER }}" --username "${{ secrets.REGISTRY_USERNAME }}" --password "${{ secrets.REGISTRY_PASSWORD }}"
+        
+        echo "ACR login completed successfully"
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        version: latest
+        driver-opts: network=host
+
+    - name: Build Docker Image
+      run: |
+        echo "Building Docker image..."
+        
+        # Build multi-platform image
+        docker buildx build \
+          --platform linux/amd64,linux/arm64 \
+          --tag "${{ steps.build-info.outputs.image-full }}" \
+          --tag "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest" \
+          --push \
+          --file Dockerfile \
+          .
+        
+        echo "Docker image built and pushed successfully"
+        echo "Image: ${{ steps.build-info.outputs.image-full }}"
+
+    - name: Run Trivy Security Scan (Table Format)
+      if: ${{ !inputs.skip_security_scan }}
+      run: |
+        echo "Running Trivy security scan (table format)..."
+        
+        # Scan with table output for console display
+        trivy image \
+          --format table \
+          --exit-code 1 \
+          --ignore-unfixed \
+          --vuln-type os,library \
+          --severity CRITICAL,HIGH \
+          --timeout 10m \
+          "${{ steps.build-info.outputs.image-full }}"
+
+    - name: Run Trivy Security Scan (SARIF Format)
+      uses: aquasecurity/trivy-action@0.28.0
+      if: ${{ !inputs.skip_security_scan }}
+      with:
+        image-ref: ${{ steps.build-info.outputs.image-full }}
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        exit-code: '1'
+        ignore-unfixed: true
+        vuln-type: 'os,library'
+        severity: 'CRITICAL,HIGH'
+        timeout: '10m'
+
+    - name: Upload Trivy Scan Results to GitHub Security
+      uses: github/codeql-action/upload-sarif@v3
+      if: always() && !inputs.skip_security_scan
+      with:
+        sarif_file: 'trivy-results.sarif'
+        category: 'trivy'
+
+    - name: Generate Security Report
+      if: ${{ !inputs.skip_security_scan }}
+      run: |
+        echo "Generating comprehensive security report..."
+        
+        # Create detailed security report
+        trivy image \
+          --format json \
+          --ignore-unfixed \
+          --vuln-type os,library \
+          --severity CRITICAL,HIGH,MEDIUM,LOW \
+          --timeout 10m \
+          "${{ steps.build-info.outputs.image-full }}" > security-report.json
+        
+        # Generate summary
+        echo "## Security Scan Summary" > security-summary.md
+        echo "- **Image:** ${{ steps.build-info.outputs.image-full }}" >> security-summary.md
+        echo "- **Scan Date:** $(date -u)" >> security-summary.md
+        echo "- **Build ID:** ${{ steps.build-info.outputs.build-id }}" >> security-summary.md
+        echo "" >> security-summary.md
+        
+        # Count vulnerabilities by severity
+        if [ -f "security-report.json" ]; then
+          CRITICAL=$(jq -r '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length' security-report.json 2>/dev/null || echo "0")
+          HIGH=$(jq -r '[.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH")] | length' security-report.json 2>/dev/null || echo "0")
+          MEDIUM=$(jq -r '[.Results[]?.Vulnerabilities[]? | select(.Severity=="MEDIUM")] | length' security-report.json 2>/dev/null || echo "0")
+          LOW=$(jq -r '[.Results[]?.Vulnerabilities[]? | select(.Severity=="LOW")] | length' security-report.json 2>/dev/null || echo "0")
+          
+          echo "- **Critical:** $CRITICAL" >> security-summary.md
+          echo "- **High:** $HIGH" >> security-summary.md
+          echo "- **Medium:** $MEDIUM" >> security-summary.md
+          echo "- **Low:** $LOW" >> security-summary.md
+        fi
+
+    - name: Upload Security Artifacts
+      uses: actions/upload-artifact@v4
+      if: always() && !inputs.skip_security_scan
+      with:
+        name: security-reports-${{ steps.build-info.outputs.build-id }}
+        path: |
+          trivy-results.sarif
+          security-report.json
+          security-summary.md
+        retention-days: 30
+
+    - name: Generate SBOM (Software Bill of Materials)
+      run: |
+        echo "Generating SBOM..."
+        
+        # Generate SBOM using Trivy
+        trivy image \
+          --format cyclonedx \
+          --timeout 10m \
+          "${{ steps.build-info.outputs.image-full }}" > sbom.cyclonedx.json
+        
+        # Generate SPDX format as well
+        trivy image \
+          --format spdx-json \
+          --timeout 10m \
+          "${{ steps.build-info.outputs.image-full }}" > sbom.spdx.json
+
+    - name: Upload SBOM Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: sbom-${{ steps.build-info.outputs.build-id }}
+        path: |
+          sbom.cyclonedx.json
+          sbom.spdx.json
+        retention-days: 90
+
+    - name: Post-build Cleanup
+      if: always()
+      run: |
+        echo "Performing post-build cleanup..."
+        
+        # Clean up Docker system
+        docker system prune -f || true
+        
+        # Clean up Maven cache if needed
+        if [ -d "$HOME/.m2/repository" ]; then
+          find "$HOME/.m2/repository" -name "*.repositories" -delete || true
+        fi
+        
+        echo "Cleanup completed"
+
+  deploy:
+    name: Deploy to AKS
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      url: ${{ steps.deployment-info.outputs.app-url }}
+    
+    permissions:
+      contents: read
+      actions: read
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Azure CLI and Dependencies
+      run: |
+        echo "Installing Azure CLI and Kubernetes tools..."
+        
+        # Install Azure CLI
+        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+        
+        # Install kubectl
+        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+        sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+        
+        # Install Helm
+        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+        
+        # Verify installations
+        az version
+        kubectl version --client
+        helm version
+        
+        echo "All tools installed successfully"
+
+    - name: Login to Azure
+      run: |
+        echo "Logging into Azure..."
+        
+        # Login using service principal
+        az login --service-principal \
+          --username "${{ secrets.AZURE_CLIENT_ID }}" \
+          --password "${{ secrets.AZURE_CLIENT_SECRET }}" \
+          --tenant "${{ secrets.AZURE_TENANT_ID }}"
+        
+        # Set subscription
+        az account set --subscription "${{ secrets.AZURE_SUSCRIPTION_ID }}"
+        
+        # Verify login
+        az account show
+        echo "Azure login completed"
+
+    - name: Get AKS Credentials
+      run: |
+        echo "Getting AKS cluster credentials..."
+        
+        # Get AKS credentials
+        az aks get-credentials \
+          --resource-group "${{ secrets.AKS_RESOURCE_GROUP }}" \
+          --name "${{ secrets.AKS_CLUSTER_NAME }}" \
+          --overwrite-existing
+        
+        # Verify connection
+        kubectl cluster-info
+        kubectl get nodes
+        
+        echo "AKS credentials configured successfully"
+
+    - name: Verify Namespace and Resources
+      run: |
+        echo "Verifying namespace and resources..."
+        
+        # Check if namespace exists
+        if ! kubectl get namespace "${{ env.NAMESPACE }}" >/dev/null 2>&1; then
+          echo "Creating namespace ${{ env.NAMESPACE }}..."
+          kubectl create namespace "${{ env.NAMESPACE }}"
+        else
+          echo "Namespace ${{ env.NAMESPACE }} already exists"
+        fi
+        
+        # List current resources in namespace
+        echo "Current resources in namespace:"
+        kubectl get all -n "${{ env.NAMESPACE }}" || echo "No resources found"
+
+    - name: Prepare Kubernetes Manifests
+      run: |
+        echo "Preparing Kubernetes manifests..."
+        
+        # Update image tag in Kubernetes manifests
+        find k8s/ -name "*.yaml" -type f -exec sed -i "s|java-app:latest|${{ needs.build.outputs.image-full }}|g" {} \;
+        find k8s/ -name "*.yaml" -type f -exec sed -i "s|book-rev-namespace|${{ env.NAMESPACE }}|g" {} \;
+        
+        # Verify changes
+        echo "Updated manifests:"
+        grep -r "image:" k8s/ || true
+        grep -r "namespace:" k8s/ || true
+
+    - name: Deploy Application to AKS
+      id: deployment-info
+      run: |
+        echo "Deploying application to AKS..."
+        
+        # Apply Kubernetes manifests in order
+        echo "Applying namespace and configuration..."
+        kubectl apply -f k8s/namespace.yaml || true
+        kubectl apply -f k8s/configmap.yaml
+        kubectl apply -f k8s/secrets.yaml
+        
+        echo "Applying application deployment..."
+        kubectl apply -f k8s/deployment.yaml
+        kubectl apply -f k8s/service.yaml
+        
+        echo "Applying security policies..."
+        kubectl apply -f k8s/network-policy.yaml || echo "Network policies not supported or already exist"
+        kubectl apply -f k8s/security-policies.yaml || echo "Security policies not supported or already exist"
+        
+        echo "Applying monitoring configuration..."
+        kubectl apply -f k8s/monitoring.yaml || echo "Monitoring configuration not supported or already exist"
+        
+        # Wait for deployment to be ready
+        echo "Waiting for deployment to be ready..."
+        kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} -n "${{ env.NAMESPACE }}" --timeout=600s
+        
+        # Get deployment info
+        EXTERNAL_IP=$(kubectl get service/${{ env.DEPLOYMENT_NAME }}-service -n "${{ env.NAMESPACE }}" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "pending")
+        
+        if [ "$EXTERNAL_IP" = "pending" ] || [ -z "$EXTERNAL_IP" ]; then
+          APP_URL="http://localhost:8080 (use port-forward)"
+          echo "app-url=${APP_URL}" >> $GITHUB_OUTPUT
+        else
+          APP_URL="http://${EXTERNAL_IP}:8080"
+          echo "app-url=${APP_URL}" >> $GITHUB_OUTPUT
+        fi
+        
+        echo "Deployment completed successfully!"
+        echo "Application URL: ${APP_URL}"
+
+    - name: Run Post-Deployment Health Checks
+      run: |
+        echo "Running post-deployment health checks..."
+        
+        # Wait for pods to be ready
+        kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=book-review-app -n "${{ env.NAMESPACE }}" --timeout=300s
+        
+        # Get pod information
+        echo "Pod status:"
+        kubectl get pods -n "${{ env.NAMESPACE }}" -l app.kubernetes.io/name=book-review-app
+        
+        # Test health endpoint using port-forward
+        echo "Testing health endpoint..."
+        kubectl port-forward service/${{ env.DEPLOYMENT_NAME }}-service 8080:80 -n "${{ env.NAMESPACE }}" &
+        PF_PID=$!
+        
+        # Wait for port-forward to be ready
+        sleep 10
+        
+        # Test health endpoint
+        for i in {1..5}; do
+          if curl -f http://localhost:8080/actuator/health >/dev/null 2>&1; then
+            echo "✅ Health check passed on attempt $i"
+            break
+          else
+            echo "❌ Health check failed on attempt $i, retrying..."
+            sleep 5
+          fi
+          
+          if [ $i -eq 5 ]; then
+            echo "❌ Health checks failed after 5 attempts"
+            kubectl logs -l app.kubernetes.io/name=book-review-app -n "${{ env.NAMESPACE }}" --tail=20
+            kill $PF_PID 2>/dev/null || true
+            exit 1
+          fi
+        done
+        
+        # Clean up port-forward
+        kill $PF_PID 2>/dev/null || true
+        
+        echo "✅ All health checks passed successfully!"
+
+    - name: Generate Deployment Summary
+      run: |
+        echo "Generating deployment summary..."
+        
+        # Create deployment summary
+        cat > deployment-summary.md << EOF
+        # Deployment Summary
+        
+        ## Build Information
+        - **Build ID:** ${{ needs.build.outputs.build-id }}
+        - **Image:** ${{ needs.build.outputs.image-full }}
+        - **Environment:** ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+        - **Namespace:** ${{ env.NAMESPACE }}
+        - **Deployment Time:** $(date -u)
+        
+        ## Cluster Information
+        - **Cluster:** ${{ secrets.AKS_CLUSTER_NAME }}
+        - **Resource Group:** ${{ secrets.AKS_RESOURCE_GROUP }}
+        - **Registry:** ${{ secrets.REGISTRY_LOGIN_SERVER }}
+        
+        ## Application Status
+        EOF
+        
+        # Add pod information
+        echo "### Pods" >> deployment-summary.md
+        kubectl get pods -n "${{ env.NAMESPACE }}" -l app.kubernetes.io/name=book-review-app -o wide >> deployment-summary.md || true
+        
+        echo "" >> deployment-summary.md
+        echo "### Services" >> deployment-summary.md
+        kubectl get services -n "${{ env.NAMESPACE }}" >> deployment-summary.md || true
+        
+        echo "" >> deployment-summary.md
+        echo "### Ingress" >> deployment-summary.md
+        kubectl get ingress -n "${{ env.NAMESPACE }}" >> deployment-summary.md || true
+        
+        cat deployment-summary.md
+
+    - name: Upload Deployment Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: deployment-summary-${{ needs.build.outputs.build-id }}
+        path: deployment-summary.md
+        retention-days: 30
+
+    - name: Rollback on Failure
+      if: failure()
+      run: |
+        echo "Deployment failed, attempting rollback..."
+        
+        # Get previous revision
+        PREVIOUS_REVISION=$(kubectl rollout history deployment/${{ env.DEPLOYMENT_NAME }} -n "${{ env.NAMESPACE }}" | grep -E "^[0-9]+" | tail -2 | head -1 | awk '{print $1}' || echo "")
+        
+        if [ -n "$PREVIOUS_REVISION" ] && [ "$PREVIOUS_REVISION" != "REVISION" ]; then
+          echo "Rolling back to revision $PREVIOUS_REVISION..."
+          kubectl rollout undo deployment/${{ env.DEPLOYMENT_NAME }} -n "${{ env.NAMESPACE }}" --to-revision="$PREVIOUS_REVISION"
+          kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} -n "${{ env.NAMESPACE }}" --timeout=300s
+          echo "Rollback completed"
+        else
+          echo "No previous revision found, scaling down deployment..."
+          kubectl scale deployment/${{ env.DEPLOYMENT_NAME }} --replicas=0 -n "${{ env.NAMESPACE }}"
+          echo "Deployment scaled down"
+        fi
+
+    - name: Cleanup
+      if: always()
+      run: |
+        echo "Performing cleanup..."
+        
+        # Kill any remaining port-forward processes
+        pkill -f "kubectl port-forward" || true
+        
+        # Clean up any temporary files
+        rm -f deployment-summary.md || true
+        
+        echo "Cleanup completed"
+
+  notification:
+    name: Send Notifications
+    runs-on: ubuntu-latest
+    needs: [build, deploy]
+    if: always()
+    
+    steps:
+    - name: Notify Deployment Status
+      run: |
+        if [ "${{ needs.deploy.result }}" == "success" ]; then
+          echo "✅ Deployment completed successfully!"
+          echo "Build ID: ${{ needs.build.outputs.build-id }}"
+          echo "Image: ${{ needs.build.outputs.image-full }}"
+          echo "Environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}"
+        else
+          echo "❌ Deployment failed!"
+          echo "Please check the logs for more information."
+        fi

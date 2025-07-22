@@ -1,0 +1,154 @@
+version: '3.8'
+
+services:
+  book-review-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - BUILD_DATE=${BUILD_DATE:-2024-01-20}
+    image: book-review-app:1.0.0
+    container_name: book-review-app
+    restart: unless-stopped
+    
+    # Security Context
+    user: "1001:1001"
+    read_only: true
+    
+    # Resource Limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    
+    # Security Options
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    
+    # Temporary filesystems for security
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+      - /app/tmp:noexec,nosuid,size=50m
+    
+    # Volumes for persistent data
+    volumes:
+      - app-data:/app/data:rw
+      - app-logs:/app/logs:rw
+    
+    # Port mapping
+    ports:
+      - "8080:8080"
+    
+    # Environment variables
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - JAVA_OPTS=-Xms256m -Xmx512m -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0
+      - DB_PASSWORD=securepassword123
+      - SERVER_PORT=8080
+      - LOGGING_LEVEL_ROOT=INFO
+      - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,metrics
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Network
+    networks:
+      - book-review-network
+
+  # Optional: Reverse proxy with SSL termination
+  nginx:
+    image: nginx:1.25.2-alpine
+    container_name: book-review-nginx
+    restart: unless-stopped
+    
+    # Security Context
+    user: "nginx:nginx"
+    read_only: true
+    
+    # Security Options
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+      - CHOWN
+      - DAC_OVERRIDE
+    
+    # Temporary filesystems
+    tmpfs:
+      - /tmp:noexec,nosuid,size=10m
+      - /var/cache/nginx:rw,noexec,nosuid,size=50m
+      - /var/run:rw,noexec,nosuid,size=10m
+    
+    # Port mapping
+    ports:
+      - "80:80"
+      - "443:443"
+    
+    # Configuration
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    
+    # Depends on the main application
+    depends_on:
+      book-review-app:
+        condition: service_healthy
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
+    # Network
+    networks:
+      - book-review-network
+
+# Volumes
+volumes:
+  app-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data
+  app-logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./logs
+
+# Network
+networks:
+  book-review-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

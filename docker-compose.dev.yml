@@ -1,0 +1,91 @@
+version: '3.8'
+
+# Development version of docker-compose with additional development tools
+services:
+  book-review-app-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: book-review-app:dev
+    container_name: book-review-app-dev
+    restart: unless-stopped
+    
+    # Development-friendly security (less restrictive)
+    user: "1001:1001"
+    
+    # Resource Limits (more generous for development)
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    
+    # Security Options (development)
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    
+    # Volumes for development
+    volumes:
+      - ./data:/app/data:rw
+      - ./logs:/app/logs:rw
+      - ./src/main/resources:/app/config:ro  # Hot reload config
+    
+    # Port mapping
+    ports:
+      - "8080:8080"
+      - "8081:8081"  # Debug port
+    
+    # Development environment variables
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker,dev
+      - JAVA_OPTS=-Xms256m -Xmx1g -XX:+UseContainerSupport -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8081
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
+      - SPRING_H2_CONSOLE_ENABLED=true
+      - LOGGING_LEVEL_COM_BOOKREVIEW=DEBUG
+      - LOGGING_LEVEL_ROOT=INFO
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    
+    # Network
+    networks:
+      - book-review-dev-network
+
+  # H2 Database Console (Development only)
+  h2-console:
+    image: oscarfonts/h2:2.1.214
+    container_name: h2-console
+    restart: unless-stopped
+    ports:
+      - "8082:1521"
+      - "8083:81"
+    environment:
+      - H2_OPTIONS=-ifNotExists
+    volumes:
+      - h2-data:/opt/h2-data
+    networks:
+      - book-review-dev-network
+
+# Development volumes
+volumes:
+  h2-data:
+    driver: local
+
+# Development network
+networks:
+  book-review-dev-network:
+    driver: bridge

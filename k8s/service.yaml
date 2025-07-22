@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: book-review-app-service
+  namespace: book-rev-namespace
+  labels:
+    app.kubernetes.io/name: book-review-app
+    app.kubernetes.io/instance: production
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: service
+    app.kubernetes.io/part-of: book-review-system
+    app.kubernetes.io/managed-by: kubernetes
+    environment: production
+  annotations:
+    description: "Service for Book Review Application"
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/actuator/prometheus"
+spec:
+  type: ClusterIP
+  sessionAffinity: None
+  
+  # Service Ports
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+    protocol: TCP
+  - name: management
+    port: 8080
+    targetPort: management
+    protocol: TCP
+  
+  # Selector to match pods
+  selector:
+    app.kubernetes.io/name: book-review-app
+    app.kubernetes.io/instance: production
+---
+# Headless Service for StatefulSet-like behavior (if needed)
+apiVersion: v1
+kind: Service
+metadata:
+  name: book-review-app-headless
+  namespace: book-rev-namespace
+  labels:
+    app.kubernetes.io/name: book-review-app
+    app.kubernetes.io/instance: production
+    app.kubernetes.io/component: headless-service
+  annotations:
+    description: "Headless service for Book Review Application"
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  type: ClusterIP
+  clusterIP: None
+  publishNotReadyAddresses: true
+  
+  ports:
+  - name: http
+    port: 8080
+    targetPort: http
+    protocol: TCP
+  
+  selector:
+    app.kubernetes.io/name: book-review-app
+    app.kubernetes.io/instance: production
+---
+# Service Monitor for Prometheus (if Prometheus Operator is available)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: book-review-app-monitor
+  namespace: book-rev-namespace
+  labels:
+    app.kubernetes.io/name: book-review-app
+    app.kubernetes.io/component: monitoring
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: book-review-app
+      app.kubernetes.io/instance: production
+  endpoints:
+  - port: management
+    path: /actuator/prometheus
+    interval: 30s
+    scrapeTimeout: 10s
+    honorLabels: true
+  namespaceSelector:
+    matchNames:
+    - book-rev-namespace

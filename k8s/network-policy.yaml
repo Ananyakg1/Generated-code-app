@@ -1,0 +1,148 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: book-review-app-network-policy
+  namespace: book-rev-namespace
+  labels:
+    app.kubernetes.io/name: book-review-app
+    app.kubernetes.io/instance: production
+    app.kubernetes.io/component: network-policy
+  annotations:
+    description: "Network policy for Book Review Application security"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: book-review-app
+      app.kubernetes.io/instance: production
+  
+  policyTypes:
+  - Ingress
+  - Egress
+  
+  # Ingress Rules
+  ingress:
+  # Allow traffic from other pods in the same namespace
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: book-rev-namespace
+    - podSelector: {}
+    ports:
+    - protocol: TCP
+      port: 8080
+  
+  # Allow traffic from ingress controllers
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8080
+  
+  # Allow traffic from monitoring namespace
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    - podSelector:
+        matchLabels:
+          app: prometheus
+    ports:
+    - protocol: TCP
+      port: 8080
+  
+  # Egress Rules
+  egress:
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  
+  # Allow HTTPS for external API calls
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+  
+  # Allow HTTP for health checks and internal communication
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 80
+  
+  # Allow communication within the same namespace
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: book-rev-namespace
+    ports:
+    - protocol: TCP
+      port: 8080
+  
+  # Allow communication to kube-system for service discovery
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: TCP
+      port: 443
+---
+# Network Policy to deny all traffic by default
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: book-rev-namespace
+  labels:
+    app.kubernetes.io/component: security
+  annotations:
+    description: "Default deny all traffic policy for security"
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+---
+# Network Policy for allowing kube-system access
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-kube-system
+  namespace: book-rev-namespace
+  labels:
+    app.kubernetes.io/component: security
+  annotations:
+    description: "Allow necessary kube-system access"
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  
+  egress:
+  # Allow DNS
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  
+  # Allow API server access
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: TCP
+      port: 443
