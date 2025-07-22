@@ -1,6 +1,8 @@
 # Book Review Application
 
-A comprehensive web application for managing books and reviews, built with Spring Boot and featuring a modern, responsive frontend.
+# Java Book Review Application
+
+A comprehensive full-stack Java web application for book reviews, built with Spring Boot, Thymeleaf, and Bootstrap. Features secure Docker containerization and enterprise-grade Kubernetes deployment with automated CI/CD pipelines.
 
 ## Features
 
