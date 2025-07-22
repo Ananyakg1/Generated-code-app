@@ -13,7 +13,9 @@ LABEL description="Build stage for Book Review Application"
 
 # Create non-root user for build process
 RUN yum update -y && yum install -y shadow-utils && \
-    groupadd -r builduser && useradd -r -g builduser builduser
+    groupadd -r builduser && useradd -r -g builduser builduser && \
+    mkdir -p /home/builduser/.m2 && \
+    chown -R builduser:builduser /home/builduser
 
 # Set working directory
 WORKDIR /build
