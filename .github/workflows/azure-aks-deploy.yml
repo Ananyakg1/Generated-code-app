@@ -233,14 +233,27 @@ jobs:
           --timeout 10m \
           "${{ steps.build-info.outputs.image-full }}"
 
-    - name: Run Trivy Security Scan (SARIF Format)
+    - name: Run Trivy Security Scan (Table Format for Clear Output)
       uses: aquasecurity/trivy-action@0.28.0
       if: ${{ !inputs.skip_security_scan }}
       with:
         image-ref: ${{ steps.build-info.outputs.image-full }}
+        format: 'table'
+        exit-code: '1'
+        ignore-unfixed: true
+        vuln-type: 'os,library'
+        severity: 'CRITICAL,HIGH'
+        timeout: '10m'
+
+    # Upload SARIF separately for GitHub Security tab (optional)
+    - name: Run Trivy Security Scan (SARIF for GitHub Security)
+      uses: aquasecurity/trivy-action@0.28.0
+      if: ${{ !inputs.skip_security_scan }}
+      continue-on-error: true
+      with:
+        image-ref: ${{ steps.build-info.outputs.image-full }}
         format: 'sarif'
         output: 'trivy-results.sarif'
-        exit-code: '1'
         ignore-unfixed: true
         vuln-type: 'os,library'
         severity: 'CRITICAL,HIGH'
@@ -248,7 +261,7 @@ jobs:
 
     - name: Upload Trivy Scan Results to GitHub Security
       uses: github/codeql-action/upload-sarif@v3
-      if: always() && !inputs.skip_security_scan
+      if: always() && !inputs.skip_security_scan && hashFiles('trivy-results.sarif') != ''
       with:
         sarif_file: 'trivy-results.sarif'
         category: 'trivy'
