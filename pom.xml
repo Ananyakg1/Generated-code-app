@@ -20,10 +20,10 @@
     
     <properties>
         <java.version>17</java.version>
-        <tomcat.version>10.1.42</tomcat.version>
+        <tomcat.version>10.1.44</tomcat.version>
     </properties>
     
-    <!-- Override only Tomcat version to fix CVE-2025-48988 -->
+    <!-- Override all Tomcat versions to fix CVE-2025-48988 -->
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -31,14 +31,57 @@
                 <artifactId>tomcat-embed-core</artifactId>
                 <version>${tomcat.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-websocket</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-el</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
     
     <dependencies>
-        <!-- Spring Boot Web Starter - Using Spring Boot managed versions -->
+        <!-- Spring Boot Web Starter - Explicit Tomcat control -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.tomcat.embed</groupId>
+                    <artifactId>tomcat-embed-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.tomcat.embed</groupId>
+                    <artifactId>tomcat-embed-websocket</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.tomcat.embed</groupId>
+                    <artifactId>tomcat-embed-el</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        
+        <!-- Explicitly include secure Tomcat versions -->
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-core</artifactId>
+            <version>${tomcat.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-websocket</artifactId>
+            <version>${tomcat.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-el</artifactId>
+            <version>${tomcat.version}</version>
         </dependency>
         
         <!-- Spring Boot Data JPA -->
