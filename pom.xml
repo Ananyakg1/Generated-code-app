@@ -23,8 +23,7 @@
         <tomcat.version>10.1.42</tomcat.version>
     </properties>
     
-    <!-- Let Spring Boot 3.4.6 manage all dependencies for optimal security -->
-    <!--
+    <!-- Explicit dependency management to force Tomcat 10.1.42 and fix CVE-2025-48988 -->
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -44,7 +43,6 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-    -->
     
     <dependencies>
         <!-- Spring Boot Web Starter - Use Spring Boot 3.4.6 managed versions -->
