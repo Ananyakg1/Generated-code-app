@@ -57,14 +57,14 @@ COPY --from=builder /build/target/*.jar /scan/app.jar
 # ============================================================================
 # Runtime Stage - Minimal and secure runtime environment
 # ============================================================================
-FROM amazoncorretto:17.0.8-alpine3.18 AS runtime
+FROM amazoncorretto:17.0.13-alpine3.20 AS runtime
 
 # Set runtime metadata
 LABEL maintainer="Book Review App Team"
 LABEL description="Book Review Application - Secure Runtime"
 LABEL version="1.0.0"
-LABEL java.version="17.0.8"
-LABEL spring-boot.version="3.2.0"
+LABEL java.version="17.0.13"
+LABEL spring-boot.version="3.4.6"
 
 # Install security updates and required packages
 RUN apk update --no-cache && \
@@ -166,15 +166,15 @@ LABEL security.non-root-user="appuser"
 LABEL security.user-id="1001"
 LABEL security.group-id="1001"
 LABEL security.health-check="enabled"
-LABEL security.base-image="amazoncorretto:17.0.8-alpine3.18"
-LABEL security.scan-date="2024-01-20"
+LABEL security.base-image="amazoncorretto:17.0.13-alpine3.20"
+LABEL security.scan-date="2025-07-22"
 LABEL vulnerability.database="updated"
 
 # OpenContainer Initiative (OCI) annotations
 LABEL org.opencontainers.image.title="Book Review Application"
 LABEL org.opencontainers.image.description="Secure Spring Boot application for managing book reviews"
 LABEL org.opencontainers.image.version="1.0.0"
-LABEL org.opencontainers.image.created="2024-01-20T00:00:00Z"
+LABEL org.opencontainers.image.created="2025-07-22T00:00:00Z"
 LABEL org.opencontainers.image.source="https://github.com/example/book-review-app"
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.vendor="Book Review App Team"
