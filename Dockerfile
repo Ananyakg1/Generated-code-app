@@ -12,7 +12,8 @@ LABEL maintainer="Book Review App Team"
 LABEL description="Build stage for Book Review Application"
 
 # Create non-root user for build process
-RUN groupadd -r builduser && useradd -r -g builduser builduser
+RUN yum update -y && yum install -y shadow-utils && \
+    groupadd -r builduser && useradd -r -g builduser builduser
 
 # Set working directory
 WORKDIR /build
