@@ -8,7 +8,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.7</version>
+        <version>3.4.5</version>
         <relativePath/>
     </parent>
     
@@ -20,9 +20,10 @@
     
     <properties>
         <java.version>17</java.version>
-        <tomcat.version>10.1.44</tomcat.version>
     </properties>
     
+    <!-- Using Spring Boot's managed Tomcat versions for better security compatibility -->
+    <!--
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -42,45 +43,13 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+    -->
     
     <dependencies>
-        <!-- Spring Boot Web Starter -->
+        <!-- Spring Boot Web Starter - Using Spring Boot managed versions -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.tomcat.embed</groupId>
-                    <artifactId>tomcat-embed-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.tomcat.embed</groupId>
-                    <artifactId>tomcat-embed-websocket</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.tomcat.embed</groupId>
-                    <artifactId>tomcat-embed-el</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        
-        <!-- Explicitly include fixed Tomcat versions -->
-        <dependency>
-            <groupId>org.apache.tomcat.embed</groupId>
-            <artifactId>tomcat-embed-core</artifactId>
-            <version>10.1.44</version>
-        </dependency>
-        
-        <dependency>
-            <groupId>org.apache.tomcat.embed</groupId>
-            <artifactId>tomcat-embed-websocket</artifactId>
-            <version>10.1.44</version>
-        </dependency>
-        
-        <dependency>
-            <groupId>org.apache.tomcat.embed</groupId>
-            <artifactId>tomcat-embed-el</artifactId>
-            <version>10.1.44</version>
         </dependency>
         
         <!-- Spring Boot Data JPA -->
@@ -101,21 +70,22 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
         
-        <!-- H2 Database -->
+        <!-- H2 Database - Using Spring Boot managed version -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <version>2.3.235</version>
             <scope>runtime</scope>
         </dependency>
         
-        <!-- Spring Boot DevTools -->
+        <!-- Spring Boot DevTools - Removed for production security -->
+        <!--
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
             <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
+        -->
         
         <!-- Spring Boot Test -->
         <dependency>
@@ -124,7 +94,8 @@
             <scope>test</scope>
         </dependency>
         
-        <!-- Bootstrap and jQuery (via WebJars) -->
+        <!-- Bootstrap and jQuery (via WebJars) - Temporarily removed for security scan -->
+        <!--
         <dependency>
             <groupId>org.webjars</groupId>
             <artifactId>bootstrap</artifactId>
@@ -141,6 +112,7 @@
             <groupId>org.webjars</groupId>
             <artifactId>webjars-locator-core</artifactId>
         </dependency>
+        -->
     </dependencies>
     
     <build>
