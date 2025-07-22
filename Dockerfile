@@ -17,8 +17,9 @@ RUN yum update -y && yum install -y shadow-utils && \
     mkdir -p /home/builduser/.m2 && \
     chown -R builduser:builduser /home/builduser
 
-# Set working directory
+# Set working directory and ensure builduser owns it
 WORKDIR /build
+RUN chown -R builduser:builduser /build
 
 # Copy dependency files first for better caching
 COPY --chown=builduser:builduser pom.xml .
