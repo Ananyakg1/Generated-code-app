@@ -4,7 +4,7 @@
 # ============================================================================
 # Build Stage - Use specific OpenJDK version for Maven build
 # ============================================================================
-FROM maven:3.9.4-amazoncorretto-17@sha256:8b9aef8a5e2c3bb42c3e6d7b9e0c5d8d5e9c9b2a8c7e3f5a4b1d2c3e4f5g6h7i AS builder
+FROM maven:3.9.4-amazoncorretto-17 AS builder
 
 # Set build-time metadata
 LABEL stage=builder
@@ -53,7 +53,7 @@ COPY --from=builder /build/target/*.jar /scan/app.jar
 # ============================================================================
 # Runtime Stage - Minimal and secure runtime environment
 # ============================================================================
-FROM amazoncorretto:17.0.8-alpine3.18@sha256:a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2 AS runtime
+FROM amazoncorretto:17.0.8-alpine3.18 AS runtime
 
 # Set runtime metadata
 LABEL maintainer="Book Review App Team"
