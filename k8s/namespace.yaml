@@ -58,4 +58,6 @@ spec:
     type: Container
   - default:
       storage: "1Gi"
+    defaultRequest:
+      storage: "1Gi"
     type: PersistentVolumeClaim
