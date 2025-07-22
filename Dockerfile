@@ -66,8 +66,8 @@ LABEL spring-boot.version="3.2.0"
 RUN apk update --no-cache && \
     apk upgrade --no-cache && \
     apk add --no-cache \
-        curl=8.2.1-r0 \
-        tzdata=2023c-r1 \
+        curl \
+        tzdata \
         ca-certificates && \
     # Clean up package cache
     rm -rf /var/cache/apk/* && \
