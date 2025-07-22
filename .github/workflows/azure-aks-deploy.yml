@@ -175,7 +175,7 @@ jobs:
           --tenant "${{ secrets.AZURE_TENANT_ID }}"
         
         # Set subscription
-        az account set --subscription "${{ secrets.AZURE_SUSCRIPTION_ID }}"
+        az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
         
         # Verify login
         az account show
@@ -388,7 +388,7 @@ jobs:
           --tenant "${{ secrets.AZURE_TENANT_ID }}"
         
         # Set subscription
-        az account set --subscription "${{ secrets.AZURE_SUSCRIPTION_ID }}"
+        az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
         
         # Verify login
         az account show
