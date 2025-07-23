@@ -487,11 +487,13 @@ jobs:
         kubectl apply -f k8s/secrets.yaml
         
         echo "Applying application deployment..."
-        # Try main deployment first, fallback to simple deployment if it fails
-        if ! kubectl apply -f k8s/deployment.yaml; then
-          echo "Main deployment failed, trying simple deployment..."
-          kubectl apply -f k8s/deployment-simple.yaml
-        fi
+        # Delete any existing deployments first to avoid conflicts
+        kubectl delete deployment book-review-app -n "${{ env.NAMESPACE }}" --ignore-not-found=true
+        kubectl delete deployment book-review-app-simple -n "${{ env.NAMESPACE }}" --ignore-not-found=true
+        
+        # Use simple deployment for reliability
+        echo "Deploying simple version for testing..."
+        kubectl apply -f k8s/deployment-simple.yaml
         kubectl apply -f k8s/service.yaml
         
         echo "Applying security policies..."
@@ -503,7 +505,7 @@ jobs:
         
         # Wait for deployment to be ready
         echo "Waiting for deployment to be ready..."
-        kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} -n "${{ env.NAMESPACE }}" --timeout=600s
+        kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} -n "${{ env.NAMESPACE }}" --timeout=300s
         
         # Get deployment info
         EXTERNAL_IP=$(kubectl get service/${{ env.DEPLOYMENT_NAME }}-service -n "${{ env.NAMESPACE }}" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "pending")

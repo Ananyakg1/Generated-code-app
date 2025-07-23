@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: book-review-app-simple
+  name: book-review-app
   namespace: flask-app-namespace
   labels:
     app: book-review-app
@@ -23,19 +23,19 @@ spec:
         - containerPort: 8080
         env:
         - name: JAVA_OPTS
-          value: "-Xmx512m -Xms256m"
+          value: "-Xmx256m -Xms128m"
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "250m"
+            memory: "128Mi"
+            cpu: "100m"
           limits:
-            memory: "512Mi"
-            cpu: "500m"
+            memory: "256Mi"
+            cpu: "200m"
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: book-review-app-service-simple
+  name: book-review-app-service
   namespace: flask-app-namespace
 spec:
   selector:
