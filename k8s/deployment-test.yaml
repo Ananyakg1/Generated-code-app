@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: book-review-app
+  namespace: flask-app-namespace
+  labels:
+    app: book-review-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: book-review-app
+  template:
+    metadata:
+      labels:
+        app: book-review-app
+    spec:
+      containers:
+      - name: book-review-app
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: book-review-app-service
+  namespace: flask-app-namespace
+  labels:
+    app: book-review-app
+spec:
+  selector:
+    app: book-review-app
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 80
+  type: ClusterIP

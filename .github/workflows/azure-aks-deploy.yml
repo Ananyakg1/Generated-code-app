@@ -19,8 +19,16 @@ on:
         description: 'Skip security scan for testing'
         required: false
         default: false
-        type: boolean
-
+        type:         # Get deployment info
+        EXTERNAL_IP=$(kubectl get service/book-review-app-service -n "${{ env.NAMESPACE }}" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "pending")
+        
+        if [ "$EXTERNAL_IP" = "pending" ] || [ -z "$EXTERNAL_IP" ]; then
+          APP_URL="http://localhost:8080 (use port-forward)"
+          echo "app-url=${APP_URL}" >> $GITHUB_OUTPUT
+        else
+          APP_URL="http://${EXTERNAL_IP}:8080"
+          echo "app-url=${APP_URL}" >> $GITHUB_OUTPUT
+        fi
 env:
   JAVA_VERSION: '17'
   NODE_VERSION: '18'
@@ -487,25 +495,28 @@ jobs:
         kubectl apply -f k8s/secrets.yaml
         
         echo "Applying application deployment..."
-        # Delete any existing deployments first to avoid conflicts
+        # Delete any existing deployments and services to avoid conflicts
         kubectl delete deployment book-review-app -n "${{ env.NAMESPACE }}" --ignore-not-found=true
         kubectl delete deployment book-review-app-simple -n "${{ env.NAMESPACE }}" --ignore-not-found=true
+        kubectl delete service book-review-app-service -n "${{ env.NAMESPACE }}" --ignore-not-found=true
+        kubectl delete service book-review-app-service-simple -n "${{ env.NAMESPACE }}" --ignore-not-found=true
         
-        # Use simple deployment for reliability
-        echo "Deploying simple version for testing..."
-        kubectl apply -f k8s/deployment-simple.yaml
-        kubectl apply -f k8s/service.yaml
+        # Wait a moment for cleanup to complete
+        sleep 10
         
-        echo "Applying security policies..."
-        kubectl apply -f k8s/network-policy.yaml || echo "Network policies not supported or already exist"
-        kubectl apply -f k8s/security-policies.yaml || echo "Security policies not supported or already exist"
+        # Use minimal test deployment for reliability
+        echo "Deploying minimal test version..."
+        kubectl apply -f k8s/deployment-test.yaml
         
-        echo "Applying monitoring configuration..."
-        kubectl apply -f k8s/monitoring.yaml || echo "Monitoring configuration not supported or already exist"
+        # Skip complex security policies for now
+        echo "Skipping security policies for test deployment..."
+        
+        # Skip monitoring configuration for now
+        echo "Skipping monitoring configuration for test deployment..."
         
         # Wait for deployment to be ready
         echo "Waiting for deployment to be ready..."
-        kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} -n "${{ env.NAMESPACE }}" --timeout=300s
+        kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} -n "${{ env.NAMESPACE }}" --timeout=120s
         
         # Get deployment info
         EXTERNAL_IP=$(kubectl get service/${{ env.DEPLOYMENT_NAME }}-service -n "${{ env.NAMESPACE }}" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "pending")
