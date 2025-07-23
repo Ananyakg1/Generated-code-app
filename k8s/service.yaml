@@ -64,28 +64,3 @@ spec:
   selector:
     app.kubernetes.io/name: book-review-app
     app.kubernetes.io/instance: production
----
-# Service Monitor for Prometheus (if Prometheus Operator is available)
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: book-review-app-monitor
-  namespace: book-rev-namespace
-  labels:
-    app.kubernetes.io/name: book-review-app
-    app.kubernetes.io/component: monitoring
-    release: prometheus
-spec:
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: book-review-app
-      app.kubernetes.io/instance: production
-  endpoints:
-  - port: management
-    path: /actuator/prometheus
-    interval: 30s
-    scrapeTimeout: 10s
-    honorLabels: true
-  namespaceSelector:
-    matchNames:
-    - book-rev-namespace
