@@ -478,13 +478,13 @@ jobs:
         grep -r "namespace:" k8s/ || true
         
         # Show deployment file content for debugging
-        echo "Deployment file content:"
-        cat k8s/deployment.yaml | grep -A5 -B5 "image:"
+        echo "Test deployment file content:"
+        cat k8s/deployment-test.yaml | head -20
 
     - name: Deploy Application to AKS
       id: deployment-info
       run: |
-        echo "Deploying application to AKS..."
+        echo "Deploying application to AKS (simplified version)..."
         
         # Apply Kubernetes manifests in order
         echo "Applying namespace and configuration..."
