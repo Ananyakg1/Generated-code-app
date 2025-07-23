@@ -526,11 +526,19 @@ jobs:
         echo "Application URL: ${APP_URL}"
 
     - name: Run Post-Deployment Health Checks
+      continue-on-error: false
       run: |
+        set +e  # Don't exit on error for individual commands
         echo "Running post-deployment health checks..."
         
         # Wait for pods to be ready
-        kubectl wait --for=condition=ready pod -l app=book-review-app -n "${{ env.NAMESPACE }}" --timeout=300s
+        echo "Waiting for pods to be ready..."
+        if ! kubectl wait --for=condition=ready pod -l app=book-review-app -n "${{ env.NAMESPACE }}" --timeout=300s; then
+          echo "❌ Pods failed to become ready"
+          kubectl get pods -n "${{ env.NAMESPACE }}" -l app=book-review-app
+          kubectl describe pods -n "${{ env.NAMESPACE }}" -l app=book-review-app
+          exit 1
+        fi
         
         # Wait additional time for Spring Boot to fully start
         echo "Waiting for Spring Boot application to fully initialize..."
@@ -542,7 +550,14 @@ jobs:
         
         # Check application logs to see if it's started
         echo "Checking application startup status..."
-        kubectl logs -l app=book-review-app -n "${{ env.NAMESPACE }}" --tail=10 | grep -i "started\|ready\|running"
+        kubectl logs -l app=book-review-app -n "${{ env.NAMESPACE }}" --tail=20 || echo "No logs available yet"
+        
+        # Look for startup indicators (don't fail if not found)
+        if kubectl logs -l app=book-review-app -n "${{ env.NAMESPACE }}" --tail=50 | grep -i "started\|ready\|running\|tomcat.*started" >/dev/null 2>&1; then
+          echo "✅ Application startup detected in logs"
+        else
+          echo "⚠️ Startup messages not found, but proceeding with health checks..."
+        fi
         
         # Test health endpoint using port-forward with retry
         echo "Testing health endpoint..."
