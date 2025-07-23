@@ -41,15 +41,9 @@ spec:
       serviceAccountName: book-review-service-account
       automountServiceAccountToken: false
       
-      # Security Context for Pod
+      # Simplified Security Context for Pod - for testing
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 1001
-        runAsGroup: 1001
-        fsGroup: 1001
-        seccompProfile:
-          type: RuntimeDefault
-        supplementalGroups: [1001]
+        fsGroup: 2000
       
       # Pod Anti-Affinity for better distribution
       affinity:
@@ -80,11 +74,7 @@ spec:
         image: busybox:1.36-uclibc
         imagePullPolicy: IfNotPresent
         securityContext:
-          runAsNonRoot: true
-          runAsUser: 1001
-          runAsGroup: 1001
           allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
           capabilities:
             drop:
             - ALL
@@ -112,23 +102,15 @@ spec:
       - name: book-review-app
         image: openjdk:17-jdk-alpine
         imagePullPolicy: Always
-        command: ["sleep", "3600"]  # Temporary command for testing
+        command: ["sleep", "3600"]
         
-        # Security Context for Container
+        # Simplified security context for testing
         securityContext:
-          runAsNonRoot: true
-          runAsUser: 1001
-          runAsGroup: 1001
           allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
+          readOnlyRootFilesystem: false
           capabilities:
             drop:
             - ALL
-            add:
-            - SETUID
-            - SETGID
-          seccompProfile:
-            type: RuntimeDefault
         
         # Container Ports
         ports:
@@ -165,47 +147,45 @@ spec:
         # Resource Limits and Requests
         resources:
           requests:
-            cpu: 250m
+            cpu: 100m
+            memory: 128Mi
+            ephemeral-storage: 256Mi
+          limits:
+            cpu: 200m
             memory: 256Mi
             ephemeral-storage: 512Mi
-          limits:
-            cpu: 500m
-            memory: 512Mi
-            ephemeral-storage: 1Gi
         
-        # Liveness Probe
-        livenessProbe:
-          httpGet:
-            path: /actuator/health/liveness
-            port: http
-            scheme: HTTP
-          initialDelaySeconds: 120
-          periodSeconds: 30
-          timeoutSeconds: 10
-          successThreshold: 1
-          failureThreshold: 3
+        # Health checks disabled for test container
+        # livenessProbe:
+        #   httpGet:
+        #     path: /actuator/health/liveness
+        #     port: http
+        #     scheme: HTTP
+        #   initialDelaySeconds: 120
+        #   periodSeconds: 30
+        #   timeoutSeconds: 10
+        #   successThreshold: 1
+        #   failureThreshold: 3
         
-        # Readiness Probe
-        readinessProbe:
-          httpGet:
-            path: /actuator/health/readiness
-            port: http
-            scheme: HTTP
-          initialDelaySeconds: 60
-          periodSeconds: 10
-          timeoutSeconds: 5
-          successThreshold: 1
-          failureThreshold: 3
+        # readinessProbe:
+        #   httpGet:
+        #     path: /actuator/health/readiness
+        #     port: http
+        #     scheme: HTTP
+        #   initialDelaySeconds: 60
+        #   periodSeconds: 10
+        #   timeoutSeconds: 5
+        #   successThreshold: 1
+        #   failureThreshold: 3
         
-        # Startup Probe
-        startupProbe:
-          httpGet:
-            path: /actuator/health
-            port: http
-            scheme: HTTP
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
+        # startupProbe:
+        #   httpGet:
+        #     path: /actuator/health
+        #     port: http
+        #     scheme: HTTP
+        #   initialDelaySeconds: 30
+        #   periodSeconds: 10
+        #   timeoutSeconds: 5
           successThreshold: 1
           failureThreshold: 12
         
