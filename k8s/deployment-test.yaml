@@ -17,16 +17,19 @@ spec:
     spec:
       containers:
       - name: book-review-app
-        image: nginx:alpine
+        image: java-app:latest
         ports:
-        - containerPort: 80
+        - containerPort: 8080
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "production"
         resources:
           requests:
-            memory: "64Mi"
-            cpu: "50m"
-          limits:
-            memory: "128Mi"
+            memory: "256Mi"
             cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
 ---
 apiVersion: v1
 kind: Service
@@ -41,5 +44,5 @@ spec:
   ports:
   - protocol: TCP
     port: 8080
-    targetPort: 80
+    targetPort: 8080
   type: ClusterIP
