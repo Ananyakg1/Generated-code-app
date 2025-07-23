@@ -19,16 +19,8 @@ on:
         description: 'Skip security scan for testing'
         required: false
         default: false
-        type:         # Get deployment info
-        EXTERNAL_IP=$(kubectl get service/book-review-app-service -n "${{ env.NAMESPACE }}" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "pending")
-        
-        if [ "$EXTERNAL_IP" = "pending" ] || [ -z "$EXTERNAL_IP" ]; then
-          APP_URL="http://localhost:8080 (use port-forward)"
-          echo "app-url=${APP_URL}" >> $GITHUB_OUTPUT
-        else
-          APP_URL="http://${EXTERNAL_IP}:8080"
-          echo "app-url=${APP_URL}" >> $GITHUB_OUTPUT
-        fi
+        type: boolean
+
 env:
   JAVA_VERSION: '17'
   NODE_VERSION: '18'
