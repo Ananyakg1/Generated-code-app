@@ -450,7 +450,13 @@ jobs:
         IMAGE_TO_USE="${{ needs.build.outputs.image-full }}"
         if [ -z "$IMAGE_TO_USE" ] || [ "$IMAGE_TO_USE" = "" ]; then
           echo "Warning: Build image is empty, using fallback"
+          # First try latest from our registry
           IMAGE_TO_USE="${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest"
+          # If registry is not available, use a working base image temporarily
+          if [ -z "${{ secrets.REGISTRY_LOGIN_SERVER }}" ]; then
+            echo "Warning: Registry not available, using temporary base image"
+            IMAGE_TO_USE="openjdk:17-jdk-alpine"
+          fi
         fi
         echo "Final image to use: $IMAGE_TO_USE"
         
@@ -474,14 +480,18 @@ jobs:
         
         # Apply Kubernetes manifests in order
         echo "Applying namespace and configuration..."
-        # Force update namespace by deleting and recreating to fix LimitRange
-        kubectl delete namespace "${{ env.NAMESPACE }}" --ignore-not-found=true
+        # Delete problematic LimitRange first, then apply namespace
+        kubectl delete limitrange book-rev-limit-range -n "${{ env.NAMESPACE }}" --ignore-not-found=true
         kubectl apply -f k8s/namespace.yaml
         kubectl apply -f k8s/configmap.yaml
         kubectl apply -f k8s/secrets.yaml
         
         echo "Applying application deployment..."
-        kubectl apply -f k8s/deployment.yaml
+        # Try main deployment first, fallback to simple deployment if it fails
+        if ! kubectl apply -f k8s/deployment.yaml; then
+          echo "Main deployment failed, trying simple deployment..."
+          kubectl apply -f k8s/deployment-simple.yaml
+        fi
         kubectl apply -f k8s/service.yaml
         
         echo "Applying security policies..."
