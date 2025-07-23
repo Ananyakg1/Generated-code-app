@@ -520,15 +520,15 @@ jobs:
         echo "Running post-deployment health checks..."
         
         # Wait for pods to be ready
-        kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=book-review-app -n "${{ env.NAMESPACE }}" --timeout=300s
+        kubectl wait --for=condition=ready pod -l app=book-review-app -n "${{ env.NAMESPACE }}" --timeout=300s
         
         # Get pod information
         echo "Pod status:"
-        kubectl get pods -n "${{ env.NAMESPACE }}" -l app.kubernetes.io/name=book-review-app
+        kubectl get pods -n "${{ env.NAMESPACE }}" -l app=book-review-app
         
         # Test health endpoint using port-forward
         echo "Testing health endpoint..."
-        kubectl port-forward service/${{ env.DEPLOYMENT_NAME }}-service 8080:80 -n "${{ env.NAMESPACE }}" &
+        kubectl port-forward service/${{ env.DEPLOYMENT_NAME }}-service 8080:8080 -n "${{ env.NAMESPACE }}" &
         PF_PID=$!
         
         # Wait for port-forward to be ready
@@ -546,7 +546,7 @@ jobs:
           
           if [ $i -eq 5 ]; then
             echo "❌ Health checks failed after 5 attempts"
-            kubectl logs -l app.kubernetes.io/name=book-review-app -n "${{ env.NAMESPACE }}" --tail=20
+            kubectl logs -l app=book-review-app -n "${{ env.NAMESPACE }}" --tail=20
             kill $PF_PID 2>/dev/null || true
             exit 1
           fi
@@ -582,7 +582,7 @@ jobs:
         
         # Add pod information
         echo "### Pods" >> deployment-summary.md
-        kubectl get pods -n "${{ env.NAMESPACE }}" -l app.kubernetes.io/name=book-review-app -o wide >> deployment-summary.md || true
+        kubectl get pods -n "${{ env.NAMESPACE }}" -l app=book-review-app -o wide >> deployment-summary.md || true
         
         echo "" >> deployment-summary.md
         echo "### Services" >> deployment-summary.md
