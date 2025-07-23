@@ -110,8 +110,9 @@ spec:
       
       containers:
       - name: book-review-app
-        image: java-app:latest
+        image: openjdk:17-jdk-alpine
         imagePullPolicy: Always
+        command: ["sleep", "3600"]  # Temporary command for testing
         
         # Security Context for Container
         securityContext:

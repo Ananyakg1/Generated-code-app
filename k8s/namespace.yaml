@@ -60,4 +60,6 @@ spec:
       storage: "1Gi"
     defaultRequest:
       storage: "1Gi"
+    max:
+      storage: "10Gi"
     type: PersistentVolumeClaim
